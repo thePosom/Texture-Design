@@ -250,16 +250,21 @@ class Main
 
   public static void printToPhotos(Cube[][][] cube) {
     String folderPath = "Vars"; // Path to the folder containing the images
-    int photoWidth = 350;  // Adjust photo size as needed
-    int photoHeight = 350;
-    
+    int photoWidth = 296;  // Image width
+    int photoHeight = 262; // Image height
+    int padding = 25;      // Space between images
+
     int height = cube.length;
     int length = cube[0].length;
     int width = cube[0][0].length;
-    
+
     for (int w = 0; w < width; w++) {
-      // Create a BufferedImage to hold the combined photos
-      BufferedImage combinedImage = new BufferedImage(length * photoWidth, height * photoHeight, BufferedImage.TYPE_INT_RGB);
+      // Calculate total size of the image, accounting for padding
+      int combinedWidth = (length * photoWidth) + ((length - 1) * padding);
+      int combinedHeight = (height * photoHeight) + ((height - 1) * padding);
+      
+      // Create a BufferedImage to hold the combined photos with padding
+      BufferedImage combinedImage = new BufferedImage(combinedWidth, combinedHeight, BufferedImage.TYPE_INT_RGB);
       Graphics2D g = combinedImage.createGraphics();
       
       g.setColor(Color.WHITE);
@@ -274,10 +279,14 @@ class Main
             File imageFile = new File(folderPath + "/" + photoNum + ".png");
             BufferedImage photo = ImageIO.read(imageFile);
             
+            // Calculate the x and y positions, adding padding between images
+            int x = l * (photoWidth + padding);
+            int y = h * (photoHeight + padding);
+            
             // Draw the photo into the combined image at the appropriate position
-            g.drawImage(photo, l * photoWidth, h * photoHeight, photoWidth, photoHeight, null);
+            g.drawImage(photo, x, y, photoWidth, photoHeight, null);
           } catch (Exception e) {
-                e.printStackTrace();
+            e.printStackTrace();
           }
         }
       }
@@ -286,9 +295,9 @@ class Main
       
       // Save the combined image
       try {
-          ImageIO.write(combinedImage, "jpg", new File("grid_" + w + ".jpg"));
+        ImageIO.write(combinedImage, "jpg", new File("grid_" + w + ".jpg"));
       } catch (Exception e) {
-          e.printStackTrace();
+        e.printStackTrace();
       }
     }
   }
