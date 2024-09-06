@@ -39,11 +39,10 @@ public class Cube implements Serializable {
     }
 
     public boolean setUnSet(Tree tree) {
-        if (active) {
+        if (active)
             return isLegal();
-        }
         TreeNode pNode = tree.root;
-        for (int i = 1; i < 6; i++) {
+        for (int i = 1; i <= 6; i++) {
             if (getSideN(i) != 0) {
                 String str = Cube.sideNumToString(i)+ " " + Cube.directionToString(getSideN(i));
                 pNode = pNode.findChildByName(str);
@@ -168,7 +167,7 @@ public class Cube implements Serializable {
         left = ( (num-1) % 6 < 3) ? 1 : -1;
 
         bottom = (top == ((num % 12 == 3) || (num % 12 == 5) || (num % 12 == 8) || (num % 12 == 10) ? 1 : -1)) ? 1 : -1;
-        back = ( (num % 3 == 1) || (num % 6 == 8) ) ? 1 : -1;
+        back = ( (num % 3 == 1) || (num % 12 == 8) || (num % 12 == 11) ) ? 1 : -1;
         right = ( (num % 12 == 2) || (num % 12 == 4) || (num % 12 == 5) || (num % 12 == 7) || (num % 12 == 10) || (num % 12 == 0) ) ? 1 : -1;
         
         active = true;

@@ -3,8 +3,10 @@ import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 
 import javax.imageio.ImageIO;
 class Main 
@@ -13,10 +15,14 @@ class Main
   public static void main(String[] args) 
   {
 
-    // Tree tree = new Tree();
-    tree = deserialize("tree.ser");
-    // System.out.println(tree.toString());
+    File treeFile = new File("tree.ser");
 
+    if (!treeFile.exists()) {
+      tree = new Tree();
+      serialize(tree);
+    }
+    tree = deserialize("tree.ser");
+    
     try {
       BufferedImage topImage = ImageIO.read(new File("top.png") );
       BufferedImage bottomImage = ImageIO.read(new File("bottom.png") );
@@ -44,10 +50,7 @@ class Main
       int backWidth = backImage.getWidth();
       int backHeight = backImage.getHeight();
 
-      // Check if all images have the same dimensions
-      boolean matchingDimensions = (topWidth == backWidth && backWidth == bottomWidth && bottomWidth == frontWidth
-              && frontHeight == leftHeight && leftHeight == backHeight && backHeight == rightHeight
-              && topHeight == leftWidth && leftWidth == bottomHeight && bottomHeight == rightWidth);
+      boolean matchingDimensions = validateBoxDimensions(topWidth, topHeight, bottomWidth, bottomHeight, rightWidth, rightHeight, leftWidth, leftHeight, frontWidth, frontHeight, backWidth, backHeight);
       if (!matchingDimensions) {
         System.out.println("non matching dimensions");
         return;
@@ -60,9 +63,9 @@ class Main
       boolean[][] front = imageTo2DArray(frontImage);
       boolean[][] back = imageTo2DArray(backImage);
 
-      Cube[][][] cube = setCubeArraySides(top, bottom, right, left, front, back);
+      Cube[][][] cube = setCubeArraySides(top, bottom, right, left, front, back); // [Bottom-Top][Left-Right][Back-Forward]
       theAlgorithm(cube);
-      printCubeArray(cube);
+      // printCubeArray(cube);
       printToPhotos(cube);
 
 
@@ -74,9 +77,9 @@ class Main
   }
 
   public static Cube[][][] setCubeArraySides(boolean[][] top, boolean[][] bottom, boolean[][] right, boolean[][] left, boolean[][] front, boolean[][] back) {
-    int w = top.length;
     int h = left[0].length;
-    int l = top[0].length;
+    int l = top.length;
+    int w = top[0].length;
     Cube[][][] cube = initializeSquares(w, h, l);
 
     setCubeArraySize(cube, Cube.TOP, top);
@@ -90,112 +93,159 @@ class Main
   }
 
   public static void theAlgorithm(Cube[][][] cube) {
-    int l = cube[0][0].length;
+    int width = cube[0][0].length;
     
-    for (int i = 0; i < l - 3; i++) {
-      generalSlice(cube, i);
+    for (int w = 0; w < width - 3; w++) {
+      generalSlice(cube, w);
     }
     setThirdLastSlice(cube);
     setSecondLastSlice(cube);
     setLastSlice(cube);
   }
 
-  private static void generalSlice(Cube[][][] cube, int l) {
-    int w = cube.length;
-    int h = cube[0].length;
+  private static void generalSlice(Cube[][][] cube, int w) {
+    int height = cube.length;
+    int length = cube[0].length;
 
-    for (int i = 0; i < w; i++) {
-      for (int k = 0; k < h; k++) {
+    for (int l = 0; l < length; l++) {
+      for (int h = 0; h < height; h++) {
 
-        if (i >= w - 2 && k >= h - 3)
-          setFinalSix(cube, i, k, l);
+        if (l >= length - 2 && h >= height - 3)
+          setFinalSix(cube, h, l, w);
 
-          if (!cube[i][k][l].setUnSet(tree)) {
-            i++;
-            i--;
-          }
-      }
-    }
-  }
-
-  private static void setLastSlice(Cube[][][] cube) {
-    int w = cube.length;
-    int h = cube[0].length;
-    int l = cube[0][0].length;
-
-    for (int i = w - 1; i >= 0; i--) {
-      for (int k = h - 1; k >= 0; k--) {
-        if (i == 0 && k == 0) {
-          cube[i][k][l-1].setSideN(Cube.BOTTOM, 0);
-          cube[i][k][l-1].setActive(false);
+        if (!cube[h][l][w].setUnSet(tree)) {
+          l++;
+          l--;
         }
-        if (!cube[i][k][l-1].setUnSet(tree)) {
-          i++;
-          i--;
-        }
+        else 
+          setSurroundingSqueres(cube, h, l, w); 
       }
     }
   }
   
-  private static void setSecondLastSlice(Cube[][][] cube) {
-    int w = cube.length;
-    int h = cube[0].length;
-    int l = cube[0][0].length;
-
-    for (int i = 0; i < w; i++) {
-      for (int k = 0; k < h; k++) {
-
-        if (i >= w - 2 && k >= h - 3)
-          setFinalSix(cube, i, k, l - 2);
-
-        else {
-          cube[i][k][l-2].setSideN(Cube.FRONT, cube[i][k][l-1].getSideN(Cube.FRONT));
-          cube[i][k][l-1].setSideN(Cube.BACK, -1*cube[i][k][l-1].getSideN(Cube.FRONT));
+    private static void setThirdLastSlice(Cube[][][] cube) {
+      int height = cube.length;
+      int length = cube[0].length;
+      int width = cube[0][0].length;
+  
+      for (int l = 0; l < length; l++) {
+        for (int h = 0; h < height; h++) {
+  
+          if (l >= length - 2 && h >= height - 3)
+            setFinalSix(cube, h, l, width-3);
+  
+          else if (l == width - 2 || h == height - 2) {
+            cube[h][l][width-3].setSideN(Cube.FRONT, cube[h][l][width-1].getSideN(Cube.FRONT));
+            cube[h][l][width-2].setSideN(Cube.BACK, -1 * cube[h][l][width-1].getSideN(Cube.FRONT));
+          }
+  
+          if (!cube[h][l][width - 3].setUnSet(tree)) {
+            l++;
+            l--;
+          }
+          else 
+            setSurroundingSqueres(cube, h, l, width - 3); 
         }
-        if (!cube[i][k][l-2].setUnSet(tree)) {
-          i++;
-          i--;
+      }
+    }
+
+    private static void setSecondLastSlice(Cube[][][] cube) {
+      int height = cube.length;
+      int length = cube[0].length;
+      int width = cube[0][0].length;
+  
+      for (int l = 0; l < length; l++) {
+        for (int h = 0; h < height; h++) {
+  
+          if (l >= length - 2 && h >= height - 3)
+            setFinalSix(cube, h, l, width-2);
+  
+          else if (l == length - 2) {
+            cube[h][l][width-2].setSideN(Cube.RIGHT, cube[h][length-1][width-2].getSideN(Cube.RIGHT));
+            cube[h][length-1][width-2].setSideN(Cube.LEFT, -1 * cube[h][length-1][width-2].getSideN(Cube.RIGHT));
+
+          }
+          else if (h == height - 2) {
+            cube[h][l][width-2].setSideN(Cube.TOP, cube[height-1][l][width-2].getSideN(Cube.TOP));
+            cube[height-1][l][width-2].setSideN(Cube.BOTTOM, -1 * cube[height-1][l][width-2].getSideN(Cube.TOP));
+
+          }
+          else {
+            cube[h][l][width-2].setSideN(Cube.FRONT, cube[h][l][width-1].getSideN(Cube.FRONT));
+            cube[h][l][width-1].setSideN(Cube.BACK, -1 * cube[h][l][width-1].getSideN(Cube.FRONT));
+          }
+  
+          if (!cube[h][l][width-2].setUnSet(tree)) {
+            l++;
+            l--;
+          }
+          else 
+            setSurroundingSqueres(cube, h, l, width - 2); 
         }
+      }
+    }
+
+  private static void setLastSlice(Cube[][][] cube) {
+    int height = cube.length;
+    int length = cube[0].length;
+    int width = cube[0][0].length;
+
+    for (int l = length - 1; l >= 0; l--) {
+      for (int h = height - 1; h >= 0; h--) {
+        if (l == 0 && h == 0) {
+          cube[h][l][width-1].setSideN(Cube.BOTTOM, 0);
+          cube[h][l][width-1].setActive(false);
+        }
+
+        if (!cube[h][l][width-1].setUnSet(tree)) {
+          l++;
+          l--;
+        }
+        else 
+            setSurroundingSqueres(cube, h, l, width - 1); 
       }
     }
   }
 
-  private static void setThirdLastSlice(Cube[][][] cube) {
-    int w = cube.length;
-    int h = cube[0].length;
-    int l = cube[0][0].length;
-
-    for (int i = 0; i < w; i++) {
-      for (int k = 0; k < h; k++) {
-
-        if (i >= w - 2 && k >= h - 3)
-          setFinalSix(cube, i, k, l - 3);
-
-        else if (i == w - 2 || k == h - 2) {
-          cube[i][k][l-3].setSideN(Cube.FRONT, cube[i][k][l-1].getSideN(Cube.FRONT));
-          cube[i][k][l-2].setSideN(Cube.BACK, -1*cube[i][k][l-1].getSideN(Cube.FRONT));
-        }
-        if (!cube[i][k][l-3].setUnSet(tree)) {
-          i++;
-          i--;
-        }
-      }
-    }
-  }
-
-  private static void setFinalSix(Cube[][][] cube, int w, int h, int l) {
-    int tW = cube.length;
-    int tH = cube[0].length;
+  private static void setFinalSix(Cube[][][] cube, int h, int l, int w) {
+    int height = cube.length;
+    int length = cube[0].length;
     
-    if (w == tW - 2 && (h == tH - 3 || h == tH - 1)) {
-      cube[w][h][l].setSideN(Cube.RIGHT, cube[tW-1][h][l].getSideN(Cube.RIGHT));
-      cube[w+1][h][l].setSideN(Cube.LEFT, -1*cube[tW-1][h][l].getSideN(Cube.RIGHT));
+    if (l == length - 2 && (h == height - 3 || h == height - 1)) {
+      cube[h][l][w].setSideN(Cube.RIGHT, cube[h][length-1][w].getSideN(Cube.RIGHT));
+      cube[h][length-1][w].setSideN(Cube.LEFT, -1 * cube[h][length-1][w].getSideN(Cube.RIGHT));
 
     }
-    if ((w == tW - 1 && h == tH - 3) || ((w == tW - 1 || w == tW - 2) && h == tH - 2)) {
-      cube[w][h][l].setSideN(Cube.BOTTOM, cube[w][tH-1][l].getSideN(Cube.BOTTOM));
-      cube[w][h+1][l].setSideN(Cube.TOP, -1*cube[w][tH-1][l].getSideN(Cube.BOTTOM));
+    if ((l == length - 1 && h == height - 3) || ((l == length - 1 || l == length - 2) && h == height - 2)) {
+      cube[h][l][w].setSideN(Cube.TOP, cube[height-1][l][w].getSideN(Cube.TOP));
+      cube[h+1][l][w].setSideN(Cube.BOTTOM, -1 * cube[height-1][l][w].getSideN(Cube.TOP));
     }
+  }
+
+  private static void setSurroundingSqueres(Cube[][][] cube, int h, int l, int w) {
+    int height = cube.length;
+    int length = cube[0].length;
+    int width = cube[0][0].length;
+    
+    if (h != 0 && cube[h-1][l][w].getActive() == false)
+      cube[h-1][l][w].setSideN(Cube.TOP, -1 * cube[h][l][w].getSideN(Cube.BOTTOM));
+      
+    if (h != height - 1 && cube[h+1][l][w].getActive() == false)
+      cube[h+1][l][w].setSideN(Cube.BOTTOM, -1 * cube[h][l][w].getSideN(Cube.TOP));
+      
+    
+    if (l != 0 && cube[h][l-1][w].getActive() == false)
+      cube[h][l-1][w].setSideN(Cube.RIGHT, -1 * cube[h][l][w].getSideN(Cube.LEFT));
+      
+    if (l != length - 1 && cube[h][l+1][w].getActive() == false)
+      cube[h][l+1][w].setSideN(Cube.LEFT, -1 * cube[h][l][w].getSideN(Cube.RIGHT));
+      
+    
+    if (w != 0 && cube[h][l][w-1].getActive() == false)
+      cube[h][l][w-1].setSideN(Cube.FRONT, -1 * cube[h][l][w].getSideN(Cube.BACK));
+      
+    if (w != width - 1 && cube[h][l][w+1].getActive() == false)
+      cube[h][l][w+1].setSideN(Cube.BACK, -1 * cube[h][l][w].getSideN(Cube.FRONT));
   }
 
   public static void printToPhotos(Cube[][][] cube) {
@@ -203,28 +253,29 @@ class Main
     int photoWidth = 350;  // Adjust photo size as needed
     int photoHeight = 350;
     
-    for (int i = 0; i < cube.length; i++) {
-      int rows = cube[i].length;
-      int cols = cube[i][0].length;
-      
+    int height = cube.length;
+    int length = cube[0].length;
+    int width = cube[0][0].length;
+    
+    for (int w = 0; w < width; w++) {
       // Create a BufferedImage to hold the combined photos
-      BufferedImage combinedImage = new BufferedImage(cols * photoWidth, rows * photoHeight, BufferedImage.TYPE_INT_RGB);
+      BufferedImage combinedImage = new BufferedImage(length * photoWidth, height * photoHeight, BufferedImage.TYPE_INT_RGB);
       Graphics2D g = combinedImage.createGraphics();
       
       g.setColor(Color.WHITE);
       g.fillRect(0, 0, combinedImage.getWidth(), combinedImage.getHeight());
 
       // Loop through each cell in the 2D array
-      for (int row = 0; row < rows; row++) {
-        for (int col = 0; col < cols; col++) {
-          int photoNum = cube[i][row][col].getVarNum();
+      for (int h = 0; h < height; h++) {
+        for (int l = 0; l < length; l++) {
+          int photoNum = cube[height-h-1][l][w].getVarNum();
           try {
             // Load the photo from the Var folder
             File imageFile = new File(folderPath + "/" + photoNum + ".png");
             BufferedImage photo = ImageIO.read(imageFile);
             
             // Draw the photo into the combined image at the appropriate position
-            g.drawImage(photo, col * photoWidth, row * photoHeight, photoWidth, photoHeight, null);
+            g.drawImage(photo, l * photoWidth, h * photoHeight, photoWidth, photoHeight, null);
           } catch (Exception e) {
                 e.printStackTrace();
           }
@@ -235,7 +286,7 @@ class Main
       
       // Save the combined image
       try {
-          ImageIO.write(combinedImage, "jpg", new File("grid_" + i + ".jpg"));
+          ImageIO.write(combinedImage, "jpg", new File("grid_" + w + ".jpg"));
       } catch (Exception e) {
           e.printStackTrace();
       }
@@ -275,54 +326,55 @@ class Main
   } 
 
   private static void setCubeArraySize(Cube[][][] cube, int side, boolean[][] sidesArr) {
-    int w = cube.length;
-    int h = cube[0].length;
-    int l = cube[0][0].length;
+    int height = cube.length;
+    int length = cube[0].length;
+    int width = cube[0][0].length;
     switch (side) {
+
       case Cube.TOP:
-        for (int i = 0; i < w; i++) {
-          for (int k = 0; k < l; k++) {
-            cube[i][h-1][k].setSideN(side, sidesArr[i][k]);
+        for (int w = 0; w < width; w++) {
+          for (int l = 0; l < length; l++) {
+            cube[height - 1][l][w].setSideN(side, sidesArr[l][w]);
           }
         }
         break;
     
         case Cube.BOTTOM:
-        for (int i = 0; i < w; i++) {
-          for (int k = 0; k < l; k++) {
-            cube[i][0][k].setSideN(side, sidesArr[i][k]);
+        for (int w = 0; w < width; w++) {
+          for (int l = 0; l < length; l++) {
+            cube[0][l][w].setSideN(side, sidesArr[l][w]);
           }
         }
         break;
     
         case Cube.RIGHT:
-        for (int i = 0; i < h; i++) {
-          for (int k = 0; k < l; k++) {
-            cube[w-1][i][k].setSideN(side, sidesArr[i][k]);
+        for (int h = 0; h < height; h++) {
+          for (int w = 0; w < width; w++) {
+            cube[h][length - 1][w].setSideN(side, sidesArr[w][h]);
           }
         }
         break;
     
         case Cube.LEFT:
-        for (int i = 0; i < h; i++) {
-          for (int k = 0; k < l; k++) {
-            cube[0][i][k].setSideN(side, sidesArr[i][k]);
+        for (int h = 0; h < height; h++) {
+          for (int w = 0; w < width; w++) {
+            cube[h][0][w].setSideN(side, sidesArr[w][h]);
           }
         }
         break;
     
         case Cube.FRONT:
-        for (int i = 0; i < w; i++) {
-          for (int k = 0; k < h; k++) {
-            cube[i][k][l-1].setSideN(side, sidesArr[i][k]);
+        for (int l = 0; l < length; l++) {
+          for (int h = 0; h < height; h++) {
+            cube[h][l][width - 1].setSideN(side, sidesArr[l][h]);
           }
         }
         break;
     
         case Cube.BACK:
-        for (int i = 0; i < w; i++) {
-          for (int k = 0; k < h; k++) {
-            cube[i][k][0].setSideN(side, sidesArr[i][k]);
+        for (int l = 0; l < length; l++) {
+          for (int h = 0; h < height; h++) {
+            cube[h][l][0].setSideN(side, sidesArr[l][h]);
           }
         }
         break;
@@ -334,10 +386,10 @@ class Main
   }
 
   public static Cube[][][] initializeSquares(int w, int h, int l) {
-    Cube[][][] cube = new Cube[w][h][l];
-    for (int i = 0; i < w; i++) {
-      for (int j = 0; j < h; j++) {
-          for (int k = 0; k < l; k++) {
+    Cube[][][] cube = new Cube[h][l][w];
+    for (int i = 0; i < h; i++) {
+      for (int j = 0; j < l; j++) {
+          for (int k = 0; k < w; k++) {
               cube[i][j][k] = new Cube();
           }
       }
@@ -346,26 +398,42 @@ class Main
   }
 
   public static boolean[][] imageTo2DArray(BufferedImage image) {
-    int width = image.getWidth(); 
+    int length = image.getWidth(); 
     int height = image.getHeight(); 
-    boolean[][] result = new boolean[width][height];
+    boolean[][] result = new boolean[length][height];
 
-    for (int i = 0; i < width; i++) {
+    for (int i = 0; i < length; i++) {
       for (int j = 0; j < height; j++) {
         int pixel = image.getRGB(i, j);
         Color color = new Color(pixel);
 
         // Check if the pixel is white (you may adjust this condition based on your definition of white)
         if (color.getRed() == 255 && color.getGreen() == 255 && color.getBlue() == 255) 
-          result[i][j] = false; // Pixel is white
+          result[i][height-j-1] = false; // Pixel is white
         else 
-          result[i][j] = true; // Pixel is not white
+          result[i][height-j-1] = true; // Pixel is not white
             
       }
     }
 
     return result;
 }
+
+  public static boolean validateBoxDimensions(int topWidth, int topHeight, int bottomWidth, int bottomHeight,
+    int rightWidth, int rightHeight, int leftWidth, int leftHeight,
+    int frontWidth, int frontHeight, int backWidth, int backHeight) {
+
+    if (topWidth != frontWidth || frontWidth != bottomWidth || bottomWidth != backWidth)
+      return false; //4
+      
+    if (frontHeight != leftHeight || leftHeight != backHeight || backHeight != rightHeight)
+      return false; //5
+      
+    if (topHeight != leftWidth || leftWidth != bottomHeight || bottomHeight != rightWidth)
+      return false; //6
+
+    return true; // All dimensions align
+  }
 
   public static Tree deserialize(String filename) {
     Tree tree = null;
@@ -379,6 +447,18 @@ class Main
     }
 
     return tree;
-}
+  }
+
+  public static void serialize(Tree tree) {
+    // Initialize the treeNode object
+
+    try (FileOutputStream fileOut = new FileOutputStream("tree.ser");
+          ObjectOutputStream out = new ObjectOutputStream(fileOut)) {
+        out.writeObject(tree);
+        System.out.println("Serialized data is saved in tree.ser");
+    } catch (IOException i) {
+        i.printStackTrace();
+    }
+  }
 
 }

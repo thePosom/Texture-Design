@@ -28,7 +28,7 @@ class TreeNode implements Serializable {
 
     public TreeNode findChildByName(String name) {
         for (TreeNode child : children) {
-            if (child.name.equals(name)) {
+            if (child != null && child.name.equals(name)) {
                 return child;
             }
         }
