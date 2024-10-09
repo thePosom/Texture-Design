@@ -110,8 +110,8 @@ class Main
     for (int l = 0; l < length; l++) {
       for (int h = 0; h < height; h++) {
 
-        if (l >= length - 2 && h >= height - 3)
-          setFinalSix(cube, h, l, w);
+        if (l >= length - 2 && h >= height - 2)
+          setFinalFour(cube, h, l, w);
 
         if (!cube[h][l][w].setUnSet(tree)) {
           l++;
@@ -131,10 +131,10 @@ class Main
       for (int l = 0; l < length; l++) {
         for (int h = 0; h < height; h++) {
   
-          if (l >= length - 2 && h >= height - 3)
-            setFinalSix(cube, h, l, width-3);
+          if (l >= length - 2 && h >= height - 2)
+            setFinalFour(cube, h, l, width - 3);
   
-          else if (l == width - 2 || h == height - 2) {
+          else if (l == length - 2 || h == height - 2) {
             cube[h][l][width-3].setSideN(Cube.FRONT, cube[h][l][width-1].getSideN(Cube.FRONT));
             cube[h][l][width-2].setSideN(Cube.BACK, -1 * cube[h][l][width-1].getSideN(Cube.FRONT));
           }
@@ -157,22 +157,23 @@ class Main
       for (int l = 0; l < length; l++) {
         for (int h = 0; h < height; h++) {
   
-          if (l >= length - 2 && h >= height - 3)
-            setFinalSix(cube, h, l, width-2);
-  
-          else if (l == length - 2) {
-            cube[h][l][width-2].setSideN(Cube.RIGHT, cube[h][length-1][width-2].getSideN(Cube.RIGHT));
-            cube[h][length-1][width-2].setSideN(Cube.LEFT, -1 * cube[h][length-1][width-2].getSideN(Cube.RIGHT));
-
-          }
-          else if (h == height - 2) {
-            cube[h][l][width-2].setSideN(Cube.TOP, cube[height-1][l][width-2].getSideN(Cube.TOP));
-            cube[height-1][l][width-2].setSideN(Cube.BOTTOM, -1 * cube[height-1][l][width-2].getSideN(Cube.TOP));
-
-          }
+          if (l >= length - 2 && h >= height - 2)
+            setFinalFour(cube, h, l, width-2);
+            
           else {
             cube[h][l][width-2].setSideN(Cube.FRONT, cube[h][l][width-1].getSideN(Cube.FRONT));
             cube[h][l][width-1].setSideN(Cube.BACK, -1 * cube[h][l][width-1].getSideN(Cube.FRONT));
+
+            if (l == length - 2) {
+              cube[h][l][width-2].setSideN(Cube.RIGHT, cube[h][length-1][width-2].getSideN(Cube.RIGHT));
+              cube[h][length-1][width-2].setSideN(Cube.LEFT, -1 * cube[h][length-1][width-2].getSideN(Cube.RIGHT));
+              
+            }
+            if (h == height - 2) {
+              cube[h][l][width-2].setSideN(Cube.TOP, cube[height-1][l][width-2].getSideN(Cube.TOP));
+              cube[height-1][l][width-2].setSideN(Cube.BOTTOM, -1 * cube[height-1][l][width-2].getSideN(Cube.TOP));
+              
+            }
           }
   
           if (!cube[h][l][width-2].setUnSet(tree)) {
@@ -207,18 +208,18 @@ class Main
     }
   }
 
-  private static void setFinalSix(Cube[][][] cube, int h, int l, int w) {
+  private static void setFinalFour(Cube[][][] cube, int h, int l, int w) {
     int height = cube.length;
     int length = cube[0].length;
     
-    if (l == length - 2 && (h == height - 3 || h == height - 1)) {
-      cube[h][l][w].setSideN(Cube.RIGHT, cube[h][length-1][w].getSideN(Cube.RIGHT));
-      cube[h][length-1][w].setSideN(Cube.LEFT, -1 * cube[h][length-1][w].getSideN(Cube.RIGHT));
+    if (l == length - 2 && h == height - 1) {
+      cube[h][l][w].setSideN(Cube.RIGHT, cube[h][length - 1][w].getSideN(Cube.RIGHT));
+      cube[h][length-1][w].setSideN(Cube.LEFT, -1 * cube[h][length - 1][w].getSideN(Cube.RIGHT));
 
     }
-    if ((l == length - 1 && h == height - 3) || ((l == length - 1 || l == length - 2) && h == height - 2)) {
-      cube[h][l][w].setSideN(Cube.TOP, cube[height-1][l][w].getSideN(Cube.TOP));
-      cube[h+1][l][w].setSideN(Cube.BOTTOM, -1 * cube[height-1][l][w].getSideN(Cube.TOP));
+    if (l == length - 2 && h == height - 2) {
+      cube[h][l][w].setSideN(Cube.TOP, cube[height - 1][l][w].getSideN(Cube.TOP));
+      cube[h+1][l][w].setSideN(Cube.BOTTOM, -1 * cube[height - 1][l][w].getSideN(Cube.TOP));
     }
   }
 
