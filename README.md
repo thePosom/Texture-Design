@@ -5,3 +5,5 @@ The minimum size can be 3x3x3
 To run you need to run main. The first time running it, it would take a couple of seconds, subsequent runs will be faster.
 You will get as output in the folder the code is in the grids, one grid for each layer from back to front with the variation on the square written and shown.
 the front right top cube can't always be set to fit the predetermined faces.
+
+For more details, read this scientific paper which uses this program: Chaviva Sirote-Katz, Ofri Palti, Naomi Spiro, Tamás Kálmán, and Yair Shokef, “Breaking mechanical holography in combinatorial metamaterials,” arXiv:2411.15760 (2024)   https://arxiv.org/abs/2411.15760
